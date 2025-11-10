@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import { Fingerprint, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,11 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { fetchUserSession } from '@/lib/auth';
-import { signIn, signOut } from '@aws-amplify/auth';
+import { loginAction } from './actions';
 
 const LoginPage = () => {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const [email, setEmail] = useState('');
@@ -25,7 +22,7 @@ const LoginPage = () => {
     setShowPassword(!showPassword);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
 
@@ -36,46 +33,21 @@ const LoginPage = () => {
 
     startTransition(async () => {
       try {
-        // Optional: Sign out any existing session first
-        try {
-          await signOut();
-        } catch (signoutErr) {
-          console.log(
-            'No previous session to sign out of, or error during sign out:',
-            signoutErr
-          );
-        }
+        // Create FormData from form inputs
+        const formData = new FormData();
+        formData.append('email', email);
+        formData.append('password', password);
 
-        // Sign in with Amplify on the client
-        const signInResult = await signIn({ username: email, password });
+        // Call the server action for login
+        const result = await loginAction(formData);
 
-        if (signInResult.isSignedIn) {
-          // Call the library function to fetch server session and set cookie
-          const result = await fetchUserSession();
-
-          if (result?.success) {
-            router.push('/dashboard');
-          } else {
-            setError('Server session setup failed after client login.');
-          }
-        } else {
-          // Handle other sign-in steps if necessary (e.g., MFA)
-          console.log('Login result:', signInResult);
-          let errorMessage = 'Login process not complete.';
-          if (
-            signInResult.nextStep?.signInStep ===
-            'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED'
-          ) {
-            errorMessage =
-              'New password required. Please complete the process.';
-          } else if (signInResult.nextStep?.signInStep) {
-            errorMessage = `Login requires additional step: ${signInResult.nextStep.signInStep}`;
-          }
-          setError(errorMessage);
+        // Handle error response (redirect happens automatically on success)
+        if (result && !result.success) {
+          setError(result.error || 'Login failed. Please try again.');
         }
       } catch (err: any) {
         console.error('Login failed:', err);
-        setError(err.message || 'Login error.');
+        setError(err.message || 'An unexpected error occurred.');
       }
     });
   };
