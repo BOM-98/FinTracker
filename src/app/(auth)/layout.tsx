@@ -1,24 +1,19 @@
-import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/lib/auth/server-auth';
-
 /**
- * Auth Layout - protects authentication routes
+ * Auth Layout - for authentication and onboarding routes
  *
- * If user is already authenticated, redirect to /dashboard
- * Otherwise, render auth pages (login, register, confirm-signup)
+ * This layout wraps:
+ * - /login, /register, /confirm-signup (public auth pages)
+ * - /onboarding/* (protected onboarding pages)
+ *
+ * Note: We don't add any redirect logic here because:
+ * - Middleware handles dashboard → onboarding redirects
+ * - Child layouts handle their own protection (onboarding requires auth)
+ * - Login/register pages can be accessed by anyone (middleware allows)
  */
-export default async function AuthLayout({
+export default function AuthLayout({
   children
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
-
-  // If user is already authenticated, redirect to dashboard
-  if (user) {
-    redirect('/dashboard');
-  }
-
-  // User is not authenticated, render auth pages
   return <>{children}</>;
 }

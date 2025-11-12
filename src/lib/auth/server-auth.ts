@@ -379,3 +379,43 @@ export async function getCurrentFamilyId(): Promise<string | null> {
   const userData = await getUserData();
   return userData?.familyId || null;
 }
+
+/**
+ * Require user to NOT be onboarded (for onboarding pages)
+ *
+ * Redirects to dashboard if already onboarded.
+ * Redirects to login if not authenticated.
+ *
+ * Use this in onboarding pages to ensure users don't access
+ * onboarding flow if they've already completed it.
+ *
+ * @example
+ * ```tsx
+ * export default async function OnboardingLayout({ children }) {
+ *   await requireNotOnboarded()
+ *   // User is authenticated but not yet onboarded
+ *   return <>{children}</>
+ * }
+ * ```
+ */
+export async function requireNotOnboarded() {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  const supabase = await createClient();
+
+  const { data: userData } = await supabase
+    .from('users')
+    .select('onboarded_at')
+    .eq('id', user.id)
+    .single();
+
+  if (userData?.onboarded_at) {
+    redirect('/dashboard'); // Already onboarded
+  }
+
+  return user;
+}

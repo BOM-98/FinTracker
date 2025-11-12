@@ -15,19 +15,15 @@ export type AuthResult = {
 
 /**
  * User signup data collected during registration
+ *
+ * Simplified to only collect essential information during registration.
+ * Additional details are collected during onboarding or profile settings.
  */
 export type SignupData = {
   email: string;
   password: string;
   firstName: string;
   lastName: string;
-  phoneNumber?: string;
-  dateOfBirth?: string;
-  address1?: string;
-  city?: string;
-  state?: string;
-  postalCode?: string;
-  ssn?: string;
 };
 
 /**
