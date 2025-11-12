@@ -4,10 +4,11 @@ import Header from '@/components/layout/header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
+import { requireAuthRedirect } from '@/lib/auth/server-auth';
 
 export const metadata: Metadata = {
-  title: 'Next Shadcn Dashboard Starter',
-  description: 'Basic dashboard with Next.js and Shadcn'
+  title: 'FinTracker',
+  description: 'Financial Tracking Dashboard'
 };
 
 export default async function DashboardLayout({
@@ -15,6 +16,9 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Protect all dashboard routes - redirect to /login if not authenticated
+  await requireAuthRedirect();
+
   // Persisting the sidebar state in the cookie.
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"

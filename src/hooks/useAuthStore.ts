@@ -1,174 +1,257 @@
 'use client';
 
 import { create } from 'zustand';
-import { fetchAuthSession, signOut } from '@aws-amplify/auth';
-import type { UserDetails } from '@/models/user.model';
+import { createClient } from '@/lib/supabase/client';
 
 /**
- * Represents the shape of our Auth state.
+ * User profile data (non-sensitive information only)
+ *
+ * SECURITY NOTE: This store does NOT contain:
+ * - ❌ Tokens (stored in httpOnly cookies by Supabase)
+ * - ❌ Passwords
+ * - ❌ Roles (validated server-side only)
+ * - ❌ Permissions (checked server-side only)
+ *
+ * This data is for UI display purposes only.
+ * All authorization MUST be done server-side.
+ */
+export type UserProfile = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl?: string | null;
+  familyId?: string;
+  familyName?: string;
+} | null;
+
+/**
+ * Auth store state
  */
 type AuthState = {
-  token: string;
-  idToken: string;
-  accessToken: string;
-  isLoggedIn: boolean;
-  user: UserDetails;
-  loading: boolean;
+  user: UserProfile;
+  isLoading: boolean;
   error: string | null;
 
-  loadUserDetails: () => Promise<void>;
-  logoutUser: () => Promise<void>;
-  setAuthSession: (partialAuth: Partial<AuthState>) => void;
-  clearAuthSession: () => void;
+  // Actions
+  loadUser: () => Promise<void>;
+  clearUser: () => void;
+  updateProfile: (updates: Partial<Exclude<UserProfile, null>>) => void;
 };
 
 /**
- * Define the initial state
+ * Initial state
  */
-const initialAuthState = {
-  token: '',
-  idToken: '',
-  accessToken: '',
-  isLoggedIn: false,
-  user: {
-    email: '',
-    firstName: '',
-    lastName: '',
-    role: 'Unknown',
-    roles: [],
-    admin: false,
-    superAdmin: false,
-    dash: false,
-    bb: false,
-    instanceId: ''
-  },
-  loading: false,
-  error: null as string | null
+const initialState = {
+  user: null,
+  isLoading: false,
+  error: null
 };
 
 /**
- * useAuthStore:
+ * Auth Store (Zustand)
+ *
+ * PURPOSE:
+ * - Cache user profile data for Client Components
+ * - Reduce database queries for repeated UI access
+ * - Provide fast, synchronous access to user info
+ *
+ * SECURITY:
+ * - No tokens stored (httpOnly cookies only)
+ * - No role-based authorization (server-side only)
+ * - Data is for display purposes only
+ *
+ * USAGE:
+ * ```tsx
+ * 'use client'
+ *
+ * function UserAvatar() {
+ *   const { user, loadUser } = useAuthStore()
+ *
+ *   useEffect(() => {
+ *     loadUser()
+ *   }, [loadUser])
+ *
+ *   if (!user) return null
+ *
+ *   return <Avatar src={user.avatarUrl} name={user.firstName} />
+ * }
+ * ```
  */
 export const useAuthStore = create<AuthState>((set, get) => ({
-  ...initialAuthState,
+  ...initialState,
 
   /**
-   * loadUserDetails:
-   * extracts user details, roles, tokens, etc.
+   * Load user profile from Supabase
+   *
+   * This fetches the current user from Supabase auth and their
+   * extended profile from the users table.
+   *
+   * SECURITY: Tokens remain in httpOnly cookies, never exposed to JS
    */
-  loadUserDetails: async () => {
+  loadUser: async () => {
     try {
-      set({ loading: true, error: null });
-      const session = await fetchAuthSession();
+      set({ isLoading: true, error: null });
 
-      if (!session.tokens?.idToken?.payload) {
-        throw new Error('No ID token payload found.');
+      const supabase = createClient();
+
+      // Get auth user (from session cookies)
+      const {
+        data: { user: authUser },
+        error: authError
+      } = await supabase.auth.getUser();
+
+      if (authError) {
+        throw new Error(authError.message);
       }
 
-      const payload = session.tokens.idToken.payload;
-      const email = String(payload.email ?? '');
-      const firstName = String(payload.given_name ?? '');
-      const lastName = String(payload.family_name ?? '');
-      const roles = (payload['cognito:groups'] as string[]) || [];
-
-      // Determine role from roles array
-      let role = 'Unknown';
-      let admin = false;
-      let superAdmin = false;
-      if (roles.includes('SuperAdmin')) {
-        role = 'SuperAdmin';
-        admin = true;
-        superAdmin = true;
-      } else if (roles.includes('Admin')) {
-        role = 'Admin';
-        admin = true;
-      } else if (roles.includes('Member')) {
-        role = 'Member';
+      if (!authUser) {
+        // No user logged in
+        set({ user: null, isLoading: false, error: null });
+        return;
       }
 
-      const idToken = session.tokens.idToken.toString();
-      const accessToken = session.tokens.accessToken.toString();
-
-      // Set state
-      set({
-        loading: false,
-        error: null,
-        idToken,
-        accessToken,
-        isLoggedIn: true,
-        user: {
+      // Get extended profile from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select(
+          `
+          id,
           email,
-          firstName,
-          lastName,
-          role,
-          roles,
-          admin,
-          superAdmin,
-          dash: false,
-          bb: false
-        }
+          first_name,
+          last_name,
+          family_id,
+          families (
+            name
+          )
+        `
+        )
+        .eq('id', authUser.id)
+        .single();
+
+      if (userError) {
+        console.error('Error loading user profile:', userError);
+        // Still set basic info from auth user
+        set({
+          user: {
+            id: authUser.id,
+            email: authUser.email!,
+            firstName: authUser.user_metadata?.first_name || '',
+            lastName: authUser.user_metadata?.last_name || '',
+            avatarUrl: authUser.user_metadata?.avatar_url || null
+          },
+          isLoading: false,
+          error: 'Could not load full profile'
+        });
+        return;
+      }
+
+      // Set complete user profile
+      set({
+        user: {
+          id: userData.id,
+          email: userData.email,
+          firstName: userData.first_name || '',
+          lastName: userData.last_name || '',
+          avatarUrl: authUser.user_metadata?.avatar_url || null,
+          familyId: userData.family_id || undefined,
+          familyName: (userData.families as any)?.name || undefined
+        },
+        isLoading: false,
+        error: null
       });
     } catch (err: any) {
-      console.error('Error loading user details:', err);
+      console.error('Error loading user:', err);
       set({
-        loading: false,
-        error: err.message || 'Failed to load user details.',
-        isLoggedIn: false
+        user: null,
+        isLoading: false,
+        error: err.message || 'Failed to load user'
       });
     }
   },
 
   /**
-   * logoutUser:
+   * Clear user from store
+   *
+   * NOTE: This does NOT log the user out of Supabase.
+   * It only clears the client-side cache.
+   *
+   * For actual logout, use the logout server action.
    */
-  logoutUser: async () => {
-    try {
-      await signOut();
-      // Clear everything after signout
-      set({
-        idToken: '',
-        accessToken: '',
-        token: '',
-        isLoggedIn: false,
-        user: { ...initialAuthState.user },
-        error: null,
-        loading: false
-      });
-    } catch (err: any) {
-      console.error('Error during signout:', err);
-      set({ error: err.message || 'Error signing out.' });
-    }
+  clearUser: () => {
+    set({ ...initialState });
   },
 
   /**
-   * setAuthSession:
+   * Update user profile in store (optimistic update)
+   *
+   * This updates the local cache immediately for better UX.
+   * The actual server update should happen separately.
+   *
+   * EXAMPLE:
+   * ```tsx
+   * const { updateProfile } = useAuthStore()
+   *
+   * // Optimistic update
+   * updateProfile({ firstName: 'John' })
+   *
+   * // Then persist to server
+   * await updateUserProfile({ firstName: 'John' })
+   * ```
    */
-  setAuthSession: (partialAuth) => {
-    set((state) => ({
-      idToken: partialAuth.idToken ?? state.idToken,
-      accessToken: partialAuth.accessToken ?? state.accessToken,
-      token: partialAuth.token ?? state.token,
-      // merge user objects if present
-      user: partialAuth.user
-        ? {
-            ...state.user,
-            ...partialAuth.user
-          }
-        : state.user,
-      isLoggedIn: true
-    }));
-  },
+  updateProfile: (updates) => {
+    const currentUser = get().user;
+    if (!currentUser) return;
 
-  /**
-   * clearAuthSession:
-   */
-  clearAuthSession: () => {
     set({
-      idToken: '',
-      accessToken: '',
-      token: '',
-      isLoggedIn: false,
-      user: { ...initialAuthState.user }
+      user: {
+        ...currentUser,
+        ...updates
+      }
     });
   }
 }));
+
+/**
+ * Hook to get user display name
+ *
+ * Convenience hook for displaying user's full name
+ */
+export function useUserDisplayName(): string {
+  const user = useAuthStore((state) => state.user);
+
+  if (!user) return 'Guest';
+
+  const { firstName, lastName } = user;
+
+  if (firstName && lastName) {
+    return `${firstName} ${lastName}`;
+  }
+
+  if (firstName) return firstName;
+  if (lastName) return lastName;
+
+  return user.email.split('@')[0]; // Fallback to email username
+}
+
+/**
+ * Hook to get user initials
+ *
+ * Convenience hook for avatar displays
+ */
+export function useUserInitials(): string {
+  const user = useAuthStore((state) => state.user);
+
+  if (!user) return '??';
+
+  const { firstName, lastName } = user;
+
+  if (firstName && lastName) {
+    return `${firstName[0]}${lastName[0]}`.toUpperCase();
+  }
+
+  if (firstName) return firstName.slice(0, 2).toUpperCase();
+  if (lastName) return lastName.slice(0, 2).toUpperCase();
+
+  return user.email.slice(0, 2).toUpperCase();
+}

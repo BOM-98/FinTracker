@@ -2,11 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-
-export type AuthResult = {
-  success: boolean;
-  error?: string;
-};
+import type { AuthResult } from '@/lib/auth/types';
 
 /**
  * Server action to log in a user with email and password
@@ -41,45 +37,6 @@ export async function loginAction(
 
   // Successful login - redirect to dashboard
   redirect('/dashboard');
-}
-
-/**
- * Server action to sign up a new user with email and password
- */
-export async function signupAction(
-  formData: FormData
-): Promise<AuthResult | never> {
-  const email = String(formData.get('email'));
-  const password = String(formData.get('password'));
-
-  if (!email || !password) {
-    return {
-      success: false,
-      error: 'Email and password are required.'
-    };
-  }
-
-  const supabase = await createClient();
-
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      // Optional: Add email redirect URL for confirmation
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/auth/callback`
-    }
-  });
-
-  if (error) {
-    console.error('Signup error:', error);
-    return {
-      success: false,
-      error: error.message || 'Signup failed. Please try again.'
-    };
-  }
-
-  // If email confirmation is enabled, redirect to confirmation page
-  redirect('/confirm-signup');
 }
 
 /**

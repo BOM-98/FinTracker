@@ -46,7 +46,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
 import { OrgSwitcher } from '../org-switcher';
-import { signOut } from '@aws-amplify/auth';
+import { logoutAction } from '@/app/(auth)/login/actions';
 import { Button } from '../ui/button';
 export const company = {
   name: 'Acme Inc',
@@ -199,7 +199,12 @@ export default function AppSidebar() {
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    await logoutAction();
+                    router.push('/login');
+                  }}
+                >
                   <IconLogout className='mr-2 h-4 w-4' />
                   Sign Out
                 </DropdownMenuItem>

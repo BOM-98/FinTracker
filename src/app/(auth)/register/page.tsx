@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,85 +17,17 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
-import { useSignupStore } from '@/hooks/useSignupStore';
 import CustomInput from '@/components/ui/custom-input';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { authFormSchema } from '@/lib/authFormSchema';
-
-import { signUp } from 'aws-amplify/auth';
-
-interface SignUpDataForAction {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  roles?: string[]; // Note: 'roles' is not part of the current authFormSchema in lib/utils.ts
-  address1: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  phoneNumber: string;
-  dateOfBirth: string;
-  ssn: string;
-}
-
-const handleSignUpAction = async (data: SignUpDataForAction) => {
-  console.log(
-    'handleSignUpAction (server @ app/(auth)/sign-up/actions.ts) - Received data:',
-    JSON.stringify(data, null, 2)
-  );
-  const {
-    email,
-    password,
-    firstName,
-    lastName,
-    phoneNumber,
-    dateOfBirth,
-    address1,
-    city,
-    state,
-    postalCode,
-    ssn,
-    roles // Note: 'roles' is not part of the current authFormSchema in lib/utils.ts
-  } = data;
-
-  try {
-    const cognitoResult = await signUp({
-      username: email,
-      password,
-      options: {
-        userAttributes: {
-          email,
-          given_name: firstName,
-          family_name: lastName,
-          phone_number: phoneNumber,
-          birthdate: dateOfBirth,
-          address: address1,
-          'custom:city': city,
-          'custom:state': state,
-          'custom:postal_code': postalCode,
-          'custom:ssn': ssn,
-          ...(roles &&
-            roles.length > 0 && { 'custom:roles': JSON.stringify(roles) })
-        }
-      }
-    });
-    console.log(' Sign up successful:', cognitoResult);
-    return cognitoResult;
-  } catch (error) {
-    console.error(' Error during sign up:', error);
-    throw error;
-  }
-};
+import { signupAction } from './actions';
 
 const SignUp = () => {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const { setEmail: setEmailForConfirmation } = useSignupStore();
   const formSchema = authFormSchema('sign-up');
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -120,41 +51,30 @@ const SignUp = () => {
     setIsLoading(true);
     setError(null);
 
-    console.log(
-      'SignUp Page onSubmit - Form Data:',
-      JSON.stringify(data, null, 2)
-    );
-
     try {
-      const result = await handleSignUpAction({
-        password: data.password,
+      const result = await signupAction({
         email: data.email,
+        password: data.password,
         firstName: data.firstName!,
         lastName: data.lastName!,
-        phoneNumber: data.phoneNumber!,
-        dateOfBirth: data.dateOfBirth!,
-        address1: data.address1!,
-        city: data.city!,
-        state: data.state!,
-        postalCode: data.postalCode!,
-        ssn: data.ssn!
+        phoneNumber: data.phoneNumber,
+        dateOfBirth: data.dateOfBirth,
+        address1: data.address1,
+        city: data.city,
+        state: data.state,
+        postalCode: data.postalCode,
+        ssn: data.ssn
       });
 
-      if (result.nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
-        console.log('Confirmation required.');
-        setEmailForConfirmation(data.email); // Store email for confirmation page
-        router.push('/confirm-signup');
-      } else {
-        console.log(
-          'Sign up successful (auto-confirmed or no confirmation step).'
-        );
-        // If auto-confirmed or no confirmation needed, redirect to sign-in or home
-        router.push('/sign-in');
+      // If we get here without redirect, there was an error
+      if (!result.success) {
+        setError(result.error || 'Registration failed. Please try again.');
       }
+      // Note: On success, the action will redirect to /confirm-signup
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : 'An unexpected error occurred.';
-      console.error('Authentication error (sign-up):', err);
+      console.error('Registration error:', err);
       setError(errorMessage);
     } finally {
       setIsLoading(false);

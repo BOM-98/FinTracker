@@ -1,0 +1,104 @@
+{
+  "version": "1.0",
+  "skills": {
+    "frontend-dev-guidelines": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "high",
+      "promptTriggers": {
+        "keywords": [
+          "component",
+          "page",
+          "next.js",
+          "nextjs",
+          "react",
+          "shadcn",
+          "tailwind",
+          "form",
+          "server component",
+          "client component",
+          "server action",
+          "app router",
+          "routing",
+          "layout",
+          "loading",
+          "error",
+          "suspense",
+          "data fetch",
+          "supabase client",
+          "typescript",
+          "styling",
+          "ui",
+          "button",
+          "input",
+          "card"
+        ],
+        "intentPatterns": [
+          "create.*page",
+          "build.*component",
+          "add.*form",
+          "implement.*feature",
+          "style.*with",
+          "fetch.*data",
+          "how.*do.*i.*make",
+          "show.*me.*example",
+          "need.*help.*with.*ui",
+          "create.*new.*route"
+        ]
+      }
+    },
+    "api-organization": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "high",
+      "promptTriggers": {
+        "keywords": [
+          "api",
+          "endpoint",
+          "api client",
+          "api-client",
+          "endpoints.ts",
+          "endpoint-types",
+          "protected-endpoints",
+          "admin-api",
+          "api request",
+          "api call",
+          "fetch",
+          "http",
+          "rest",
+          "authentication",
+          "auth header",
+          "access token",
+          "bearer token",
+          "getAuthHeaders",
+          "apiGet",
+          "apiPost",
+          "apiPut",
+          "apiDelete",
+          "external api",
+          "third party api",
+          "integration"
+        ],
+        "intentPatterns": [
+          "create.*endpoint",
+          "add.*endpoint",
+          "new.*api",
+          "integrate.*api",
+          "connect.*api",
+          "api.*integration",
+          "call.*api",
+          "fetch.*from.*api",
+          "external.*api",
+          "add.*authentication",
+          "protect.*endpoint",
+          "admin.*endpoint",
+          "role.*based.*access",
+          "api.*pattern",
+          "organize.*api",
+          "centralize.*api",
+          "api.*structure"
+        ]
+      }
+    }
+  }
+}

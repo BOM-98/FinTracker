@@ -8,9 +8,11 @@ import {
   AsYouType, // For placeholder generation
   CountryCode as LibCountryCode, // Renamed to avoid conflict
   isValidPhoneNumber as RPNIsValidPhoneNumber, // Keep this for final validation if needed
-  getCountries, // Keep this for country list
-  Country
+  getCountries // Keep this for country list
 } from 'libphonenumber-js/core'; // Using /core for more control, ensure metadata is loaded
+
+// Country type alias
+type Country = LibCountryCode;
 import metadata from 'libphonenumber-js/metadata.min.json'; // Import metadata
 
 import { cn } from '@/lib/utils';
@@ -23,7 +25,7 @@ import {
   CommandItem,
   CommandList
 } from '@/components/ui/command';
-import { Input, type InputProps } from '@/components/ui/input';
+import { Input } from '@/components/ui/input';
 import {
   Popover,
   PopoverContent,
