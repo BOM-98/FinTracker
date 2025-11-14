@@ -40,38 +40,6 @@ export async function loginAction(
 }
 
 /**
- * Server action to log in with GitHub OAuth
- */
-export async function loginWithGithubAction(): Promise<AuthResult | never> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'github',
-    options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/auth/callback`
-    }
-  });
-
-  if (error) {
-    console.error('GitHub OAuth error:', error);
-    return {
-      success: false,
-      error: error.message || 'GitHub login failed.'
-    };
-  }
-
-  if (data.url) {
-    // Redirect to GitHub OAuth page
-    redirect(data.url);
-  }
-
-  return {
-    success: false,
-    error: 'Failed to initiate GitHub login.'
-  };
-}
-
-/**
  * Server action to log out the current user
  */
 export async function logoutAction(): Promise<AuthResult> {

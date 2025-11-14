@@ -26,7 +26,8 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarRail
+  SidebarRail,
+  useSidebar
 } from '@/components/ui/sidebar';
 import { UserAvatarProfile } from '@/components/user-avatar-profile';
 import { navItems } from '@/constants/data';
@@ -48,38 +49,177 @@ import { Icons } from '../icons';
 import { OrgSwitcher } from '../org-switcher';
 import { logoutAction } from '@/app/(auth)/login/actions';
 import { Button } from '../ui/button';
-export const company = {
-  name: 'Acme Inc',
-  logo: IconPhotoUp,
-  plan: 'Enterprise'
+import { APP_SIDEBAR, COMPANY, TENANTS } from './constants';
+import { cn } from '@/lib/utils';
+
+// Re-export for backward compatibility
+export const company = COMPANY;
+
+// Selectors for dynamically updating width
+const SELECTORS = {
+  GAP: `[data-sidebar-id="${APP_SIDEBAR.ID}"] [data-slot="sidebar-gap"]`,
+  CONTAINER: `[data-sidebar-id="${APP_SIDEBAR.ID}"] [data-slot="sidebar-container"]`
+} as const;
+
+// Custom hook for persisting sidebar width
+const usePersistedWidth = (): [
+  number,
+  React.Dispatch<React.SetStateAction<number>>
+] => {
+  const [width, setWidth] = React.useState<number>(APP_SIDEBAR.WIDTH.DEFAULT);
+
+  // Load persisted width on mount
+  React.useEffect(() => {
+    try {
+      const savedWidth = localStorage.getItem(APP_SIDEBAR.STORAGE_KEY);
+      if (savedWidth) {
+        const parsedWidth = parseInt(savedWidth, 10);
+        if (
+          !isNaN(parsedWidth) &&
+          parsedWidth >= APP_SIDEBAR.WIDTH.MIN &&
+          parsedWidth <= APP_SIDEBAR.WIDTH.MAX
+        ) {
+          setWidth(parsedWidth);
+        }
+      }
+    } catch (error) {
+      // Silently handle localStorage errors (e.g., private browsing)
+    }
+  }, []);
+
+  // Persist width changes
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(APP_SIDEBAR.STORAGE_KEY, width.toString());
+    } catch (error) {
+      // Silently handle localStorage errors
+    }
+  }, [width]);
+
+  return [width, setWidth];
 };
 
-const tenants = [
-  { id: '1', name: 'Acme Inc' },
-  { id: '2', name: 'Beta Corp' },
-  { id: '3', name: 'Gamma Ltd' }
-];
+// Custom hook for handling resize interactions
+const useResizeHandler = (
+  setWidth: React.Dispatch<React.SetStateAction<number>>
+) => {
+  const [isResizing, setIsResizing] = React.useState(false);
+
+  const handleMouseDown = React.useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  React.useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      // Calculate from left edge
+      const newWidth = e.clientX;
+      const clampedWidth = Math.min(
+        Math.max(newWidth, APP_SIDEBAR.WIDTH.MIN),
+        APP_SIDEBAR.WIDTH.MAX
+      );
+      setWidth(clampedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    // Add event listeners
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    // Prevent text selection while resizing
+    const prevUserSelect = document.body.style.userSelect;
+    const prevCursor = document.body.style.cursor;
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = prevUserSelect;
+      document.body.style.cursor = prevCursor;
+    };
+  }, [isResizing, setWidth]);
+
+  return { isResizing, handleMouseDown };
+};
+
+// Custom hook to sync sidebar width with DOM elements
+const useSidebarWidthSync = (width: number, isExpanded: boolean, isResizing: boolean) => {
+  React.useEffect(() => {
+    const updateElementWidth = (element: Element | null, width: string, disableTransition: boolean) => {
+      if (element instanceof HTMLElement) {
+        element.style.width = width;
+        element.style.setProperty('--sidebar-width', width);
+        // Disable transition during resize for instant updates
+        if (disableTransition) {
+          element.style.transition = 'none';
+        } else {
+          element.style.removeProperty('transition');
+        }
+      }
+    };
+
+    const removeElementWidth = (element: Element | null) => {
+      if (element instanceof HTMLElement) {
+        element.style.removeProperty('width');
+        element.style.removeProperty('--sidebar-width');
+        element.style.removeProperty('transition');
+      }
+    };
+
+    const gapElement = document.querySelector(SELECTORS.GAP);
+    const containerElement = document.querySelector(SELECTORS.CONTAINER);
+
+    if (isExpanded) {
+      const widthValue = `${width}px`;
+      updateElementWidth(gapElement, widthValue, isResizing);
+      updateElementWidth(containerElement, widthValue, isResizing);
+    } else {
+      removeElementWidth(gapElement);
+      removeElementWidth(containerElement);
+    }
+  }, [width, isExpanded, isResizing]);
+};
 
 export default function AppSidebar() {
   const pathname = usePathname();
   const { isOpen } = useMediaQuery();
+  const { state } = useSidebar();
+  const isExpanded = state(APP_SIDEBAR.ID) === 'expanded';
+  const [width, setWidth] = usePersistedWidth();
+  const { isResizing, handleMouseDown } = useResizeHandler(setWidth);
+
   // const { user } = useUser();
   const router = useRouter();
   const handleSwitchTenant = (_tenantId: string) => {
     // Tenant switching functionality would be implemented here
   };
 
-  const activeTenant = tenants[0];
+  const activeTenant = TENANTS[0];
+
+  // Sync sidebar width with DOM elements
+  useSidebarWidthSync(width, isExpanded, isResizing);
 
   React.useEffect(() => {
     // Side effects based on sidebar state changes
   }, [isOpen]);
 
   return (
-    <Sidebar collapsible='icon'>
+    <>
+      <Sidebar
+        id={APP_SIDEBAR.ID}
+        collapsible={APP_SIDEBAR.COLLAPSIBLE as 'icon'}
+        variant={APP_SIDEBAR.VARIANT as 'inset'}
+      >
       <SidebarHeader>
         <OrgSwitcher
-          tenants={tenants}
+          tenants={[...TENANTS]}
           defaultTenant={activeTenant}
           onTenantSwitch={handleSwitchTenant}
         />
@@ -184,10 +324,10 @@ export default function AppSidebar() {
 
                 <DropdownMenuGroup>
                   <DropdownMenuItem
-                    onClick={() => router.push('/dashboard/profile')}
+                    onClick={() => router.push('/dashboard/settings')}
                   >
                     <IconUserCircle className='mr-2 h-4 w-4' />
-                    Profile
+                    Settings
                   </DropdownMenuItem>
                   <DropdownMenuItem>
                     <IconCreditCard className='mr-2 h-4 w-4' />
@@ -213,7 +353,40 @@ export default function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-      <SidebarRail />
+      <SidebarRail sidebarId={APP_SIDEBAR.ID} />
     </Sidebar>
+
+    {/* Resize handle - only shown when expanded */}
+    {isExpanded && (
+      <>
+        {/* Resize handle */}
+        <div
+          className={cn(
+            'fixed top-8 bottom-8 z-50 w-[1px] cursor-col-resize',
+            'bg-border hover:bg-primary/30 transition-colors',
+            "after:absolute after:inset-y-0 after:-right-2 after:-left-2 after:content-['']",
+            isResizing && 'bg-primary/50'
+          )}
+          style={{ left: `${width}px` }}
+          onMouseDown={handleMouseDown}
+          role='separator'
+          aria-label='Resize app sidebar'
+          aria-valuenow={width}
+          aria-valuemin={APP_SIDEBAR.WIDTH.MIN}
+          aria-valuemax={APP_SIDEBAR.WIDTH.MAX}
+        />
+        {/* Visual feedback for resize area */}
+        <div
+          className={cn(
+            'fixed top-0 bottom-0 z-40 w-4 cursor-col-resize',
+            'hover:bg-primary/10'
+          )}
+          style={{ left: `${width - 2}px` }}
+          onMouseDown={handleMouseDown}
+          aria-hidden='true'
+        />
+      </>
+    )}
+  </>
   );
 }

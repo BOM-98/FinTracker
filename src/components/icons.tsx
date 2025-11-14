@@ -29,8 +29,7 @@ import {
   IconUserEdit,
   IconUserX,
   IconX,
-  IconLayoutKanban,
-  IconBrandGithub
+  IconLayoutKanban
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -64,7 +63,6 @@ export const Icons = {
   sun: IconSun,
   moon: IconMoon,
   laptop: IconDeviceLaptop,
-  github: IconBrandGithub,
   twitter: IconBrandTwitter,
   check: IconCheck
 };

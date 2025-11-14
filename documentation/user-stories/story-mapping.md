@@ -10,19 +10,19 @@
 
 **Acceptance Criteria:**
 
-- [ ] User can navigate to a registration page
-- [ ] User can enter their email address
-- [ ] System validates email format (valid email pattern)
-- [ ] User can enter a password
-- [ ] Password must meet minimum security requirements (min 8 characters)
-- [ ] User can re-enter password for confirmation
-- [ ] System validates that password and confirmation match
-- [ ] System checks if email is already registered
-- [ ] If email exists, display error message "Email already in use"
-- [ ] On successful registration, create user account in database
-- [ ] System creates a new family/household record associated with the user
-- [ ] User is automatically logged in after successful registration
-- [ ] User is redirected to onboarding flow after account creation
+- [x] User can navigate to a registration page
+- [x] User can enter their email address
+- [x] System validates email format (valid email pattern)
+- [x] User can enter a password
+- [x] Password must meet minimum security requirements (min 8 characters)
+- [ ] User can re-enter password for confirmation (NOT IMPLEMENTED - single password field)
+- [ ] System validates that password and confirmation match (NOT IMPLEMENTED)
+- [x] System checks if email is already registered (handled by Supabase)
+- [x] If email exists, display error message "Email already in use" (handled by Supabase)
+- [x] On successful registration, create user account in database
+- [x] System creates a new family/household record associated with the user (via database trigger)
+- [ ] User is automatically logged in after successful registration (requires email verification first)
+- [x] User is redirected to onboarding flow after account creation (after email verification)
 
 **Maybe App Reference:**
 
@@ -41,16 +41,16 @@
 
 **Acceptance Criteria:**
 
-- [ ] During onboarding, user is prompted to enter first name
-- [ ] During onboarding, user is prompted to enter last name
-- [ ] During onboarding, user is prompted to enter household name
-- [ ] First name field is required (min 2 characters)
-- [ ] Last name field is required (min 2 characters)
-- [ ] Household name field is required (min 2 characters)
-- [ ] System validates that fields are not empty
-- [ ] User can edit these fields later in settings
-- [ ] On save, data is persisted to database
-- [ ] User is shown next step in onboarding flow
+- [x] During onboarding, user is prompted to enter first name (collected during registration, not onboarding)
+- [x] During onboarding, user is prompted to enter last name (collected during registration, not onboarding)
+- [x] During onboarding, user is prompted to enter household name
+- [x] First name field is required (min 2 characters)
+- [x] Last name field is required (min 2 characters)
+- [x] Household name field is required (min 2 characters)
+- [x] System validates that fields are not empty
+- [ ] User can edit these fields later in settings (NOT IMPLEMENTED - no settings page)
+- [x] On save, data is persisted to database
+- [x] User is shown next step in onboarding flow
 
 **Maybe App Reference:**
 
@@ -69,15 +69,15 @@
 
 **Acceptance Criteria:**
 
-- [ ] During onboarding, user is presented with a country selector
-- [ ] Country selector displays a searchable list of countries
-- [ ] User can search/filter countries by name
-- [ ] User can select one country from the list
-- [ ] Selected country is highlighted/indicated
-- [ ] Default country is set based on user's IP location (optional enhancement)
-- [ ] Country selection is required to proceed
-- [ ] Selected country is saved to family/household settings
-- [ ] Country setting affects default currency, date format, and timezone
+- [x] During onboarding, user is presented with a country selector
+- [ ] Country selector displays a searchable list of countries (only 8 hardcoded countries available)
+- [ ] User can search/filter countries by name (dropdown, not searchable)
+- [x] User can select one country from the list
+- [x] Selected country is highlighted/indicated
+- [ ] Default country is set based on user's IP location (optional enhancement - NOT IMPLEMENTED)
+- [x] Country selection is required to proceed
+- [x] Selected country is saved to family/household settings
+- [x] Country setting affects default currency, date format, and timezone (timezone not implemented)
 
 **Maybe App Reference:**
 
@@ -95,16 +95,16 @@
 
 **Acceptance Criteria:**
 
-- [ ] During onboarding, user is presented with a currency selector
-- [ ] Currency selector displays a searchable list of currencies (USD, EUR, GBP, etc.)
-- [ ] Each currency shows its symbol and code (e.g., "USD - $")
-- [ ] User can search/filter currencies by name or code
-- [ ] User can select one primary currency
-- [ ] Default currency is pre-selected based on selected country
-- [ ] Currency selection is required to proceed
-- [ ] Selected currency is saved to family settings
-- [ ] This becomes the default currency for all accounts and transactions
-- [ ] User can change currency later in settings (with data conversion implications)
+- [x] During onboarding, user is presented with a currency selector
+- [ ] Currency selector displays a searchable list of currencies (USD, EUR, GBP, etc.) (only 7 currencies available)
+- [ ] Each currency shows its symbol and code (e.g., "USD - $") (shows code only)
+- [ ] User can search/filter currencies by name or code (dropdown, not searchable)
+- [x] User can select one primary currency
+- [x] Default currency is pre-selected based on selected country
+- [x] Currency selection is required to proceed
+- [x] Selected currency is saved to family settings
+- [x] This becomes the default currency for all accounts and transactions
+- [ ] User can change currency later in settings (with data conversion implications) (NOT IMPLEMENTED - no settings page)
 
 **Maybe App Reference:**
 
@@ -123,19 +123,19 @@
 
 **Acceptance Criteria:**
 
-- [ ] During onboarding, user is presented with date format options
-- [ ] Date format options include common formats:
-  - [ ] MM-DD-YYYY (e.g., 12-31-2024)
-  - [ ] DD-MM-YYYY (e.g., 31-12-2024)
-  - [ ] YYYY-MM-DD (e.g., 2024-12-31)
-  - [ ] Other regional formats
-- [ ] Each format option shows an example with current date
-- [ ] User can select one date format
-- [ ] Default date format is pre-selected based on country
-- [ ] Date format selection is required to proceed
-- [ ] Selected format is saved to family settings
-- [ ] All dates throughout the app respect this format
-- [ ] User can change date format later in settings
+- [x] During onboarding, user is presented with date format options
+- [x] Date format options include common formats:
+  - [x] MM-DD-YYYY (e.g., 12-31-2024)
+  - [x] DD-MM-YYYY (e.g., 31-12-2024)
+  - [x] YYYY-MM-DD (e.g., 2024-12-31)
+  - [x] Other regional formats
+- [x] Each format option shows an example with current date
+- [x] User can select one date format
+- [x] Default date format is pre-selected based on country
+- [x] Date format selection is required to proceed
+- [x] Selected format is saved to family settings
+- [ ] All dates throughout the app respect this format (needs verification)
+- [ ] User can change date format later in settings (NOT IMPLEMENTED - no settings page)
 
 **Maybe App Reference:**
 
@@ -153,19 +153,19 @@
 
 **Acceptance Criteria:**
 
-- [ ] During onboarding, user is presented with theme options
-- [ ] Theme options include:
-  - [ ] Light mode
-  - [ ] Dark mode
-  - [ ] System (automatically matches OS theme)
-- [ ] Each theme option shows a visual preview
-- [ ] User can select one theme
-- [ ] Default theme is "System"
-- [ ] Theme selection is optional (can skip with default)
-- [ ] Selected theme is saved to user settings
-- [ ] Theme is immediately applied to the interface
-- [ ] User can change theme later in settings
-- [ ] Theme preference persists across sessions
+- [x] During onboarding, user is presented with theme options
+- [x] Theme options include:
+  - [x] Light mode
+  - [x] Dark mode
+  - [x] System (automatically matches OS theme)
+- [ ] Each theme option shows a visual preview (only text descriptions provided)
+- [x] User can select one theme
+- [x] Default theme is "System"
+- [ ] Theme selection is optional (can skip with default) (all steps are required to proceed)
+- [x] Selected theme is saved to user settings
+- [ ] Theme is immediately applied to the interface (needs verification)
+- [ ] User can change theme later in settings (NOT IMPLEMENTED - no settings page)
+- [x] Theme preference persists across sessions
 
 **Maybe App Reference:**
 
@@ -184,14 +184,14 @@
 
 **Acceptance Criteria:**
 
-- [ ] After completing all onboarding steps, user sees a completion screen
-- [ ] Completion screen confirms settings have been saved
-- [ ] User sees a "Get Started" or "Go to Dashboard" button
-- [ ] Clicking the button redirects user to main dashboard
-- [ ] System marks user as onboarded (onboarded_at timestamp set)
-- [ ] User should not see onboarding flow again on subsequent logins
-- [ ] If user refreshes during onboarding, they can resume where they left off
-- [ ] User can skip optional steps but required steps must be completed
+- [x] After completing all onboarding steps, user sees a completion screen
+- [x] Completion screen confirms settings have been saved
+- [x] User sees a "Get Started" or "Go to Dashboard" button
+- [x] Clicking the button redirects user to main dashboard
+- [x] System marks user as onboarded (onboarded_at timestamp set)
+- [x] User should not see onboarding flow again on subsequent logins
+- [ ] If user refreshes during onboarding, they can resume where they left off (needs verification)
+- [ ] User can skip optional steps but required steps must be completed (all steps are required)
 
 **Maybe App Reference:**
 
@@ -210,18 +210,18 @@
 
 **Acceptance Criteria:**
 
-- [ ] User can navigate to settings/profile page
-- [ ] User can view current first name, last name, email
-- [ ] User can edit first name and last name
-- [ ] User can view current household name
-- [ ] User can edit household name
-- [ ] User can view current country, currency, date format, theme
-- [ ] User can edit country, currency, date format, theme
-- [ ] Changes are validated before saving
-- [ ] User sees success message on successful save
-- [ ] User sees error messages if validation fails
-- [ ] Changes are immediately reflected throughout the app
-- [ ] Changing currency may trigger a warning about existing data
+- [ ] User can navigate to settings/profile page (page exists at /dashboard/profile but is empty)
+- [ ] User can view current first name, last name, email (NOT IMPLEMENTED)
+- [ ] User can edit first name and last name (NOT IMPLEMENTED)
+- [ ] User can view current household name (NOT IMPLEMENTED)
+- [ ] User can edit household name (NOT IMPLEMENTED)
+- [ ] User can view current country, currency, date format, theme (NOT IMPLEMENTED)
+- [ ] User can edit country, currency, date format, theme (NOT IMPLEMENTED)
+- [ ] Changes are validated before saving (NOT IMPLEMENTED)
+- [ ] User sees success message on successful save (NOT IMPLEMENTED)
+- [ ] User sees error messages if validation fails (NOT IMPLEMENTED)
+- [ ] Changes are immediately reflected throughout the app (NOT IMPLEMENTED)
+- [ ] Changing currency may trigger a warning about existing data (NOT IMPLEMENTED)
 
 **Maybe App Reference:**
 
