@@ -63,13 +63,11 @@ export default async function DashboardLayout({
     <KBar>
       <SidebarProvider defaultStates={sidebarStates}>
         <AppSidebar />
-        <SidebarInset className="flex flex-col overflow-hidden">
+        <SidebarInset>
           <Header />
-          {/* page main content - scrollable container */}
-          <div className="flex-1 overflow-y-auto">
+          <div className='scrollbar-hidden flex flex-1 flex-col overflow-auto'>
             {children}
           </div>
-          {/* page main content ends */}
         </SidebarInset>
         <ChatSidebar />
       </SidebarProvider>
